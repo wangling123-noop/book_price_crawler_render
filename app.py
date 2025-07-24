@@ -6,8 +6,14 @@ from spiders.taobao_spider import crawl_taobao
 app = Flask(__name__)
 
 @app.route("/price", methods=["GET"])
+@app.route("/api/price", methods=["POST"])
 def get_price():
-    book = request.args.get("book")
+    if request.method == "POST":
+        data = request.get_json() or {}
+        book = data.get("book")
+    else:
+        book = request.args.get("book")
+
     if not book:
         return jsonify({"error": "Missing 'book' parameter"}), 400
 
