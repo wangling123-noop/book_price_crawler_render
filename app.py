@@ -5,28 +5,39 @@ from spiders.taobao_spider import crawl_taobao
 
 app = Flask(__name__)
 
-@app.route("/price", methods=["GET"])
 @app.route("/api/price", methods=["POST"])
 def get_price():
-    if request.method == "POST":
-        data = request.get_json() or {}
+    data = request.get_json(force=True)
+    if not data:
+        return jsonify({"error": "Missing request body"}), 400
+
+    # 支持传入数组或者单个对象
+    if isinstance(data, list):
+        books = []
+        for item in data:
+            if isinstance(item, dict) and "book" in item:
+                books.append(item["book"])
+        if not books:
+            return jsonify({"error": "No valid 'book' field found in array"}), 400
+    elif isinstance(data, dict):
         book = data.get("book")
+        if not book:
+            return jsonify({"error": "Missing 'book' field"}), 400
+        books = [book]
     else:
-        book = request.args.get("book")
+        return jsonify({"error": "Invalid JSON format"}), 400
 
-    if not book:
-        return jsonify({"error": "Missing 'book' parameter"}), 400
+    results = []
+    for b in books:
+        result = {
+            "book": b,
+            "jd": crawl_jd(b),
+            "dangdang": crawl_dangdang(b),
+            "taobao": crawl_taobao(b)
+        }
+        results.append(result)
 
-    result = {
-        "jd": crawl_jd(book),
-        "dangdang": crawl_dangdang(book),
-        "taobao": crawl_taobao(book)
-    }
-    return jsonify(result)
-
-@app.route("/")
-def home():
-    return "Book Price Crawler API is running."
+    return jsonify(results)
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=10000)
