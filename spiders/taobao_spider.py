@@ -9,8 +9,8 @@ def crawl_taobao(book_name):
     if not html:
         return None
 
-    pattern = re.compile(r'g_page_config = (.*?);
-')
+    # 修正的正则表达式
+    pattern = re.compile(r'g_page_config = (.*?);')
     match = pattern.search(html)
     if not match:
         return None
